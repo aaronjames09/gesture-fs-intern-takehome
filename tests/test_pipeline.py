@@ -95,3 +95,56 @@ class TestAnswerGeneration:
         assert "2,500" in answer or "2500" in answer or "starter" in answer, (
             "Answer should address the pricing question"
         )
+
+# ────────────────────────────────
+# Input validation / error handling
+# ────────────────────────────────
+class TestInputValidation:
+    def test_empty_question_raises(self, vector_store, llm):
+        with pytest.raises(ValueError):
+            ask_question(vector_store, llm, "")
+
+    def test_whitespace_only_question_raises(self, vector_store, llm):
+        with pytest.raises(ValueError):
+            ask_question(vector_store, llm, "   \n\t  ")
+
+
+# ────────────────────────────────
+# FAQ / process content retrieval
+# ────────────────────────────────
+class TestFaqRetrieval:
+    def test_retrieves_onboarding_info(self, vector_store, llm):
+        result = ask_question(vector_store, llm, "How does onboarding work?")
+        sources_text = " ".join(result["sources"]).lower()
+        assert "onboarding" in sources_text or "kickoff" in sources_text, (
+            "Sources should contain onboarding-process content"
+        )
+
+    def test_retrieves_cancellation_policy(self, vector_store, llm):
+        result = ask_question(vector_store, llm, "Can I cancel my contract early?")
+        sources_text = " ".join(result["sources"]).lower()
+        assert "cancel" in sources_text or "termination" in sources_text, (
+            "Sources should contain contract/cancellation content"
+        )
+
+    def test_enterprise_package_price_in_sources(self, vector_store, llm):
+        result = ask_question(vector_store, llm, "What does the Enterprise package include?")
+        sources_text = " ".join(result["sources"]).lower()
+        assert "enterprise" in sources_text or "12,000" in sources_text, (
+            "Sources should contain Enterprise package content"
+        )
+
+
+# ────────────────────────────────
+# Sources content matches question topic
+# ────────────────────────────────
+class TestSourceRelevance:
+    def test_sources_are_nonempty_strings(self, vector_store, llm):
+        result = ask_question(vector_store, llm, "Do you do branding and logo design?")
+        assert all(isinstance(s, str) and s.strip() for s in result["sources"]), (
+            "Every retrieved source should be a non-empty string"
+        )
+
+    def test_at_most_three_sources(self, vector_store, llm):
+        result = ask_question(vector_store, llm, "What social platforms do you manage?")
+        assert len(result["sources"]) <= 3, "ask_question should retrieve at most k=3 chunks"
