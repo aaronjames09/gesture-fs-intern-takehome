@@ -172,3 +172,27 @@ langchain-intern-assignment/
 ---
 
 Good luck! 🚀
+
+## Implementation Notes
+
+`ask_question()` retrieves the top 3 chunks via `vector_store.similarity_search`,
+joins their `page_content` into a context string, formats `PROMPT_TEMPLATE`,
+and passes it to the local `flan-t5-base` model. It raises `ValueError` on
+empty/whitespace input so the CLI can catch it gracefully rather than
+crashing.
+
+`main()` builds the knowledge base and LLM once at startup, then runs an
+interactive loop until `quit`/`exit`, catching unexpected errors per-question
+so one bad answer doesn't kill the session.
+
+**Bonus items implemented:**
+- Input validation (empty/whitespace questions raise `ValueError`, caught by the CLI)
+- `--query "<question>"` flag for single-shot, non-interactive mode
+- Extra test coverage: input validation, FAQ/process-content retrieval, source relevance/count checks (see `TestInputValidation`, `TestFaqRetrieval`, `TestSourceRelevance` in `tests/test_pipeline.py`)
+- Full type hints on public functions
+
+**Run it:**
+```
+python -m src.pipeline
+python -m src.pipeline --query "How much does the Growth package cost?"
+```
